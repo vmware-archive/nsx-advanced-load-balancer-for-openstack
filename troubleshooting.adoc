@@ -1,0 +1,129 @@
+= Troubleshooting Guide for Avi OpenStack integration
+:author: Anant Patil
+:email: patilan@vmware.com
+
+== Keystone Integration Issues
+
+.Keystone user fails to login
+[%collapsible]
+====
+Symptoms:: 
+    * Keystone user fails to login fails with error: No matching role found
+    * Keystone user login times out.
+    * Login fails with invalid user/password.
+
+Resolution::
+    * Check role-mapping is configured in OpenStack cloud on Avi Vantage. Happens when the Keystone user doesn't have a corresponding role assigned to it in Avi. Keystone roles for users are mapped to roles in Avi Vantage. Configure OpenStack role to Avi role mapping in Cloud configuration. +
+    TIP: Add default role mapping in OpenStack cloud configuration. Refer link:view-source:https://avinetworks.com/docs/20.1/keystone-authentication/[this guide,window=_blank] for more information.
+    * Check domain name is specified along with username for non-default domain. e.g. user@testdomain is used for login with name 'user' and domain 'testdomain'.
+    * Check Keystone server is reachable from Avi Controller.
+    * Check the Keystone Auth URL configured in cloud on Avi has keystone version in it. Auto discovery of keystone version is not supported. E.g. https://keystone-host:5000/v3 is supported, not https://keystone-host:5000
+====
+
+.Very slow Non-Keystone Avi-local user login
+[%collapsible]
+====
+Symptoms::
+    * Experience delay when attempting to login with Avi local user credentials.
+
+Resolution::
+    Skip Keystone authentication using `@avilocal` suffix for local users. +
+    Example: If Avi local username is 'John', use 'John@avilocal' as username for login.
+====
+
+.Audit messages in Keystone for authentication failure Avi-local user
+[%collapsible]
+====
+Symptoms::
+    * Alerts/events in OpenStack Keystone about login attempt failures with Avi local user.
+    * Audit message in the Keystone logs for authentication failure.
+
+Resolution::
+    Skip Keystone authentication using `@avilocal` suffix for local users. +
+    Example: If Avi local username is 'John', use 'John@avilocal' as username for login.
+====
+
+.Project deleted from OpenStack still listed in Avi Vantage
+[%collapsible]
+====
+Symptoms::
+    * Avi UI lists deleted projects from OpenStack
+
+Resolution::
+    Avi Vantage doesn't automatically cleanup the tenants deleted from OpenStack. Users/Admin should review the tenant and delete them manually. +
+    Clean up tenants imported into Avi from OpenStack that no longer exist in OpenStack. link:view-source:[Use this script,window=_blank]. +
+    TIP: Periodically run the script to clean up tenants especially for environment where lots of tenant are dynamically created and deleted very often.
+====
+
+.Tenant loading is very slow/lots of deleted tenants are shown in Avi Vantage
+[%collapsible]
+====
+Symptoms::
+    * Tenant name loading takes a lot of time in Avi UI
+    * Avi UI loads tenants that are already deleted from OpenStack.
+    * Lots of "tenant not found" log messages in Avi Controller logs.
+
+Resolution::
+    Clean up tenants imported into Avi from OpenStack that no longer exist in OpenStack. link:view-source:[Use this script,window=_blank]. +
+    TIP: Periodically run the script to clean up tenants especially for environment where lots of tenant are dynamically created and deleted very often.
+====
+
+.Cannot list servers, networks while creating VS in Avi admin tenant
+[%collapsible]
+====
+Symptoms::
+    * While creating VS using Avi UI, cannot see networks in VIP network dropdown.
+    * Cannot list servers in select servers from network dropdown.
+
+Resolution::
+    Set `map_admin_to_cloudadmin` option in Cloud configuration to True. Avi will then map Avi 'admin' tenant to the admin_tenant of the Cloud. Otherwise, it maps Avi 'admin' to OpenStack 'admin' tenant.
+====
+
+== General OpenStack Integration issues
+
+.Avi SE image not deleted from OpenStack Glance after changing image type in Avi Cloud.
+[%collapsible]
+====
+Symptoms::
+    * Image list API shows multiple Avi SE images for same cloud.
+
+Resolution::
+    This is known issue as of now. Please manually delete the unused image from Glance. 
+====
+
+.Avi Vantage fails to bring up SE
+[%collapsible]
+====
+Symptoms::
+    * VS is in down state because Avi Controller cannot spin up SE VMs
+
+Resolution::
+    * Check flavor with adequate resources is accessible to Avi.
+    * Check flavor with recommneded disk size is configured.
+    * Boot from volume is not supported - so flavor with disk size 0 will not work. +
+    * Check cloud state in Avi is green.
+====
+
+.Not able to create new VSes after changing Tenant name in OpenStack
+[%collapsible]
+====
+Symptoms::
+    * VS creation fails
+    * Tenant in Avi still refers to VRF context with older name
+
+Resolution::
+    * This is known issue in Avi. Workaround is to delete the tenant and VRF context from Avi and re-import the tenant in Avi. Login again as tenant user to re-import the tenant in Avi.
+====
+
+=== Issues in Contrail environment
+
+.Virtual Service fail with error: "IP x.x.x.x not associated with any port"
+[%collapsible]
+====
+Symptoms::
+    * VS disable/enable fails with error "IP x.x.x.x not associated with any port"
+    * VS scale out/scale in operation fails with error "IP x.x.x.x not associated with any port"
+
+Resolution::
+    * This was a known issue in Avi that got fixed in 18.2.9 and 20.1.1 version. There is a link:view-source:https://github.com/avinetworks/devops/tree/master/openstack/scripts[script,window=_blank] to fix the issue. It is recommended to use the script to identify all the Virtual Services that could go in error state.
+====
