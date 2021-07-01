@@ -99,7 +99,7 @@ Symptoms::
 
 Resolution::
     * Check flavor with adequate resources is accessible to Avi.
-    * Check flavor with recommneded disk size is configured.
+    * Check flavor with recommended disk size is configured.
     * Boot from volume is not supported - so flavor with disk size 0 will not work. +
     * Check cloud state in Avi is green.
 ====
